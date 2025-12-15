@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Numerasi Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 99%, #FECFEF 100%);
+            min-height: 100vh;
+        }
+        h1, h2, h3 {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 4px solid #fff;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .option-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .option-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .option-card.selected {
+            background-color: #E0F2FE;
+            border-color: #3B82F6;
+            color: #0369A1;
+        }
+        .option-card.correct {
+            background-color: #DCFCE7 !important;
+            border-color: #22C55E !important;
+            color: #15803D !important;
+        }
+        .option-card.wrong {
+            background-color: #FEE2E2 !important;
+            border-color: #EF4444 !important;
+            color: #B91C1C !important;
+        }
+        .option-card.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .chart-bar {
+            transition: height 1s ease-out;
+            height: 0;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+
+    <!-- App Container -->
+    <div id="app" class="w-full max-w-2xl">
+        <!-- Content will be injected here by JS -->
+    </div>
+
+    <script>
+        // --- DATA SOAL ---
+        const questions = [
+            // Pilihan Ganda (1-10)
+            {
+                id: 1,
+                type: 'mc',
+                text: "Seorang peneliti ingin mengetahui tingkat kepuasan siswa terhadap kantin sekolah. Ia membagikan kuesioner langsung kepada siswa saat jam istirahat dan mengumpulkan jawabannya. Data yang diperoleh peneliti tersebut termasuk jenis data...",
+                options: ["A. Sekunder", "B. Primer", "C. Tersier", "D. Literatur"],
+                correctIndex: 1, // B. Primer
+                explanation: "Data Primer adalah data yang dikumpulkan secara langsung oleh peneliti dari sumber utamanya."
+            },
+            {
+                id: 2,
+                type: 'mc',
+                text: "Manakah di bawah ini yang merupakan contoh pengumpulan data sekunder?",
+                options: [
+                    "A. Guru mencatat tinggi badan siswa satu per satu di kelas.",
+                    "B. Pedagang menghitung stok buah yang tersisa di tokonya.",
+                    "C. Siswa mencari data jumlah penduduk Indonesia tahun 2020 melalui situs Badan Pusat Statistik (BPS).",
+                    "D. Petugas sensus mendatangi rumah warga untuk menanyakan jumlah anggota keluarga."
+                ],
+                correctIndex: 2, // C. BPS
+                explanation: "Data Sekunder adalah data yang diperoleh dari sumber yang sudah ada (seperti BPS), bukan diambil langsung."
+            },
+            {
+                id: 3,
+                type: 'mc',
+                text: "Perhatikan data panen jeruk berikut!<br><br>Senin: 🍊🍊🍊<br>Selasa: 🍊🍊<br>Rabu: 🍊🍊🍊🍊<br><br><em>(Keterangan: 1 gambar 🍊 mewakili 20 kg jeruk)</em><br><br>Berapa selisih hasil panen jeruk pada hari Rabu dan Selasa?",
+                options: ["A. 20 kg", "B. 30 kg", "C. 40 kg", "D. 80 kg"],
+                correctIndex: 2, // C. 40 kg
+                explanation: "Rabu (4 jeruk) - Selasa (2 jeruk) = 2 jeruk. 2 x 20kg = 40kg."
+            },
+            {
+                id: 4,
+                type: 'mc',
+                text: "Perhatikan data nilai ulangan Matematika siswa kelas 5. Data menunjukkan:<br>Nilai 70: 5 siswa<br>Nilai 80: 12 siswa (Tertinggi)<br>Nilai 90: 8 siswa<br>Nilai 100: 4 siswa<br><br>Modus dari data nilai ulangan tersebut adalah...",
+                options: ["A. 70", "B. 80", "C. 90", "D. 100"],
+                correctIndex: 1, // B. 80
+                chart: {
+                    labels: ['70', '80', '90', '100'],
+                    data: [5, 12, 8, 4]
+                },
+                explanation: "Modus adalah data yang paling sering muncul. Nilai 80 muncul paling banyak (12 siswa)."
+            },
+            {
+                id: 5,
+                type: 'mc',
+                text: "Berikut data pengunjung perpustakaan selama 4 hari:<br>Senin: 25<br>Selasa: 30<br>Rabu: 15<br>Kamis: 40<br><br>Jika data tersebut disajikan dalam diagram batang, batang yang paling pendek menunjukkan data hari...",
+                options: ["A. Senin", "B. Selasa", "C. Rabu", "D. Kamis"],
+                correctIndex: 2, // C. Rabu
+                chart: {
+                    labels: ['Sen', 'Sel', 'Rab', 'Kam'],
+                    data: [25, 30, 15, 40]
+                },
+                explanation: "Rabu memiliki jumlah pengunjung paling sedikit (15), sehingga batangnya paling pendek."
+            },
+            {
+                id: 6,
+                type: 'mc',
+                text: "Diketahui data berat badan balita (dalam kg) di Posyandu Melati: 8, 10, 9, 12, 8, 11, 14, 10, 9, 12.<br>Selisih antara berat badan terberat dan teringan adalah...",
+                options: ["A. 4 kg", "B. 5 kg", "C. 6 kg", "D. 7 kg"],
+                correctIndex: 2, // C. 6 kg
+                explanation: "Terberat = 14kg, Teringan = 8kg. Selisih = 14 - 8 = 6 kg."
+            },
+            {
+                id: 7,
+                type: 'mc',
+                text: "Dalam sebuah piktogram penjualan buku, 1 gambar buku mewakili 50 eksemplar. Jika pada bulan Januari terjual 350 eksemplar, berapa banyak gambar buku yang harus digambar?",
+                options: ["A. 5 gambar", "B. 6 gambar", "C. 7 gambar", "D. 8 gambar"],
+                correctIndex: 2, // C. 7 gambar
+                explanation: "350 dibagi 50 = 7."
+            },
+            {
+                id: 8,
+                type: 'mc',
+                text: "Jumlah seluruh siswa kelas 6 adalah 40 anak. Berdasarkan data ekstrakurikuler:<br>Futsal: 12 anak<br>Tari: 8 anak<br>Melukis: 10 anak<br>Basket: Sisanya<br><br>Berapa banyak siswa yang mengikuti ekstrakurikuler basket?",
+                options: ["A. 8 anak", "B. 10 anak", "C. 12 anak", "D. 14 anak"],
+                correctIndex: 1, // B. 10 anak
+                explanation: "Basket = 40 - (12 + 8 + 10) = 40 - 30 = 10 anak."
+            },
+            {
+                id: 9,
+                type: 'mc',
+                text: "Data penjualan roti selama seminggu menunjukkan penjualan tertinggi terjadi pada hari Sabtu dan terendah pada hari Senin. Pernyataan yang paling mungkin menjelaskan data tersebut adalah...",
+                options: [
+                    "A. Orang lebih suka makan roti saat hari kerja.",
+                    "B. Toko roti tutup pada hari Sabtu.",
+                    "C. Banyak orang berlibur dan berbelanja pada akhir pekan.",
+                    "D. Harga roti paling mahal pada hari Sabtu."
+                ],
+                correctIndex: 2, // C
+                explanation: "Penjualan tinggi di hari Sabtu (akhir pekan) biasanya karena orang berlibur/belanja."
+            },
+            {
+                id: 10,
+                type: 'mc',
+                text: "Berikut adalah data waktu tempuh lari (dalam detik) dari 5 siswa:<br>Andi (45), Budi (52), Caca (48), Dedi (44), Eka (50).<br>Siapakah yang memiliki catatan waktu tercepat?",
+                options: ["A. Andi", "B. Budi", "C. Dedi", "D. Eka"],
+                correctIndex: 2, // C. Dedi
+                explanation: "Dalam lari, waktu paling kecil (sedikit) adalah yang tercepat. Dedi (44 detik)."
+            },
+            // Essay (11-15)
+            {
+                id: 11,
+                type: 'essay',
+                text: "<strong>Pertanyaan Uraian 1:</strong><br>Budi ingin mendata 'Makanan Favorit' seluruh siswa di sekolahnya yang berjumlah 100 orang. Ia memutuskan untuk mewawancarai satu per satu setiap siswa. Apakah langkah Budi efektif? Jika tidak, metode apa yang lebih kamu sarankan? Jelaskan!",
+            },
+            {
+                id: 12,
+                type: 'essay',
+                text: "<strong>Pertanyaan Uraian 2:</strong><br>Data sampah plastik:<br>Minggu 1: 🗑️🗑️🗑️<br>Minggu 2: 🗑️🗑️<br>Minggu 3: 🗑️🗑️🗑️🗑️<br>(1 🗑️ = 10 kg).<br><br>Target total 3 minggu adalah minimal 100 kg. Apakah target tercapai? Buktikan dengan perhitungan!",
+            },
+            {
+                id: 13,
+                type: 'essay',
+                text: "<strong>Pertanyaan Uraian 3:</strong><br>Penjualan Sepatu:<br>Uk 36: 5 psg, Uk 37: 15 psg, Uk 38: 40 psg, Uk 39: 20 psg, Uk 40: 10 psg.<br><br>Pemilik toko ingin mengurangi stok yang kurang laku dan menambah yang laris. Berdasarkan modus dan data terkecil, saran apa yang kamu berikan?",
+            },
+            {
+                id: 14,
+                type: 'essay',
+                text: "<strong>Pertanyaan Uraian 4:</strong><br>Siti membuat diagram batang. Untuk data '130 cm' (jumlah 3 orang) ia gambar setinggi 5 kotak. Untuk data '150 cm' (jumlah 5 orang) ia gambar setinggi 3 kotak.<br><br>Jelaskan kesalahan Siti dan dampaknya bagi pembaca diagram!",
+            },
+            {
+                id: 15,
+                type: 'essay',
+                text: "<strong>Pertanyaan Uraian 5:</strong><br>Tabungan Rina:<br>Jan: Rp 20.000<br>Feb: Rp 30.000<br>Maret: Rp 40.000<br>April: Rp 50.000<br><br>Jika pola berlanjut:<br>A. Prediksi tabungan bulan Mei?<br>B. Selisih tabungan Mei dengan Januari?",
+            }
+        ];
+
+        // --- STATE MANAGEMENT ---
+        const state = {
+            step: 'login', // login, quiz, result
+            user: {
+                name: '',
+                grade: '',
+                school: ''
+            },
+            answers: {}, // Stores user answers by question ID
+            currentQuestionIndex: 0,
+            score: 0,
+            feedbackShown: false // New state to track if feedback is currently shown
+        };
+
+        // --- COMPONENTS ---
+
+        function renderApp() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+
+            if (state.step === 'login') {
+                app.appendChild(createLoginScreen());
+            } else if (state.step === 'quiz') {
+                app.appendChild(createQuizScreen());
+            } else if (state.step === 'result') {
+                app.appendChild(createResultScreen());
+            }
+        }
+
+        function createLoginScreen() {
+            const div = document.createElement('div');
+            div.className = 'glass-panel rounded-3xl p-8 text-center fade-in';
+            div.innerHTML = `
+                <div class="mb-6">
+                    <span class="text-6xl">📊</span>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Kuis Numerasi Data</h1>
+                <p class="text-gray-600 mb-8">Selamat datang! Silakan isi data diri dulu ya.</p>
+                
+                <form id="loginForm" class="space-y-4 text-left">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lengkap</label>
+                        <input type="text" id="inputName" required class="w-full px-4 py-3 rounded-xl border-2 border-purple-100 focus:border-purple-400 focus:outline-none transition" placeholder="Contoh: Werkudara">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Kelas</label>
+                        <select id="inputGrade" required class="w-full px-4 py-3 rounded-xl border-2 border-purple-100 focus:border-purple-400 focus:outline-none transition">
+                            <option value="">Pilih Kelas...</option>
+                            <option value="5">Kelas 5</option>
+                            <option value="6">Kelas 6</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Sekolah</label>
+                        <input type="text" id="inputSchool" required class="w-full px-4 py-3 rounded-xl border-2 border-purple-100 focus:border-purple-400 focus:outline-none transition" placeholder="Contoh: SD Nusantara 01">
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-[1.02] mt-4">
+                        Mulai Mengerjakan! 🚀
+                    </button>
+                </form>
+            `;
+
+            div.querySelector('#loginForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                state.user.name = document.getElementById('inputName').value;
+                state.user.grade = document.getElementById('inputGrade').value;
+                state.user.school = document.getElementById('inputSchool').value;
+                state.step = 'quiz';
+                renderApp();
+            });
+
+            return div;
+        }
+
+        function createQuizScreen() {
+            const currentQ = questions[state.currentQuestionIndex];
+            const isLast = state.currentQuestionIndex === questions.length - 1;
+            const progress = ((state.currentQuestionIndex + 1) / questions.length) * 100;
+            const userAnswer = state.answers[state.currentQuestionIndex];
+
+            const div = document.createElement('div');
+            div.className = 'glass-panel rounded-3xl p-6 md:p-8 fade-in relative overflow-hidden';
+            
+            // Header Info
+            let chartHtml = '';
+            if (currentQ.chart) {
+                // ... existing chart logic ...
+                const maxVal = Math.max(...currentQ.chart.data);
+                const bars = currentQ.chart.labels.map((label, idx) => {
+                    const val = currentQ.chart.data[idx];
+                    const height = (val / maxVal) * 100;
+                    return `
+                        <div class="flex flex-col items-center flex-1 mx-1">
+                            <div class="w-full bg-blue-100 rounded-t-lg relative flex items-end justify-center group h-32 md:h-40">
+                                <div class="bg-blue-500 w-full rounded-t-lg transition-all duration-1000 ease-out" style="height: ${height}%"></div>
+                                <span class="absolute -top-6 text-xs font-bold text-blue-600">${val}</span>
+                            </div>
+                            <span class="text-xs font-bold text-gray-600 mt-2">${label}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+                chartHtml = `
+                    <div class="mb-6 p-4 bg-white rounded-xl border border-gray-100 shadow-inner">
+                        <div class="flex items-end justify-between h-auto">
+                            ${bars}
+                        </div>
+                        <p class="text-center text-xs text-gray-400 mt-2">Diagram Batang</p>
+                    </div>
+                `;
+            }
+
+            // Options Logic
+            let optionsHtml = '';
+            let explanationHtml = '';
+            let buttonText = isLast ? 'Selesai & Lihat Hasil' : 'Lanjut';
+            let buttonAction = 'handleNext()';
+            let buttonColorClass = 'bg-gray-800 hover:bg-gray-900';
+
+            if (currentQ.type === 'mc') {
+                // Logic for Multiple Choice with Feedback
+                if (!state.feedbackShown) {
+                    buttonText = 'Cek Jawaban';
+                    buttonAction = 'handleCheck()';
+                    buttonColorClass = 'bg-blue-600 hover:bg-blue-700';
+                }
+
+                optionsHtml = `<div class="grid grid-cols-1 gap-3">
+                    ${currentQ.options.map((opt, idx) => {
+                        let cardClass = 'border-2 border-gray-100';
+                        let circleClass = 'bg-gray-100 text-gray-500';
+                        
+                        if (state.feedbackShown) {
+                            // Feedback Mode styling
+                            if (idx === currentQ.correctIndex) {
+                                cardClass = 'correct'; // Always highlight correct answer
+                                circleClass = 'bg-green-600 text-white';
+                            } else if (idx === userAnswer && userAnswer !== currentQ.correctIndex) {
+                                cardClass = 'wrong'; // Highlight wrong user selection
+                                circleClass = 'bg-red-600 text-white';
+                            } else {
+                                cardClass += ' disabled opacity-50';
+                            }
+                        } else {
+                            // Selection Mode styling
+                            if (idx === userAnswer) {
+                                cardClass = 'selected border-purple-500 bg-purple-50';
+                                circleClass = 'bg-purple-500 text-white';
+                            }
+                        }
+
+                        return `
+                        <div class="option-card rounded-xl p-4 font-semibold text-gray-700 flex items-center ${cardClass}" 
+                             onclick="${state.feedbackShown ? '' : `handleOptionSelect(${idx})`}">
+                            <div class="w-8 h-8 rounded-full mr-4 flex items-center justify-center text-sm font-bold option-circle ${circleClass}">${String.fromCharCode(65+idx)}</div>
+                            ${opt}
+                        </div>
+                    `}).join('')}
+                </div>`;
+
+                if (state.feedbackShown) {
+                    const isCorrect = userAnswer === currentQ.correctIndex;
+                    explanationHtml = `
+                        <div class="mt-6 p-4 rounded-xl ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} fade-in">
+                            <p class="font-bold text-lg mb-1">${isCorrect ? '🎉 Benar!' : '😅 Kurang Tepat'}</p>
+                            <p class="text-sm font-semibold mb-2">Pembahasan:</p>
+                            <p class="text-sm opacity-90">${currentQ.explanation}</p>
+                        </div>
+                    `;
+                }
+
+            } else {
+                // Logic for Essay (No instant feedback, just next)
+                optionsHtml = `
+                    <div class="mt-4">
+                        <textarea id="essayAnswer" rows="4" class="w-full p-4 rounded-xl border-2 border-purple-100 focus:border-purple-400 focus:outline-none resize-none" placeholder="Tulis jawabanmu di sini...">${userAnswer || ''}</textarea>
+                    </div>
+                `;
+            }
+
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <p class="text-xs font-bold text-purple-500 uppercase tracking-wider">Soal ${state.currentQuestionIndex + 1} dari ${questions.length}</p>
+                        <p class="text-xs text-gray-400">${state.user.name} - ${state.user.grade}</p>
+                    </div>
+                    <div class="bg-purple-100 text-purple-600 px-3 py-1 rounded-full text-xs font-bold">
+                        ${currentQ.type === 'mc' ? 'Pilihan Ganda' : 'Uraian'}
+                    </div>
+                </div>
+
+                <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+                    <div class="bg-gradient-to-r from-purple-400 to-pink-500 h-2 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
+                </div>
+
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 leading-relaxed">${currentQ.text}</h2>
+                </div>
+
+                ${chartHtml}
+                ${optionsHtml}
+                ${explanationHtml}
+
+                <div class="mt-8 flex justify-end">
+                    <button onclick="${buttonAction}" class="${buttonColorClass} text-white px-8 py-3 rounded-xl font-bold transition flex items-center shadow-lg transform active:scale-95">
+                        ${buttonText} 
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            `;
+            return div;
+        }
+
+        function createResultScreen() {
+           // ... existing result screen code ...
+            // Calculate Score (Only MC)
+            let correctCount = 0;
+            let mcCount = 0;
+            questions.forEach((q, idx) => {
+                if (q.type === 'mc') {
+                    mcCount++;
+                    if (state.answers[idx] === q.correctIndex) {
+                        correctCount++;
+                    }
+                }
+            });
+            const score = Math.round((correctCount / mcCount) * 100);
+
+            // Generate Review HTML
+            const reviewHtml = questions.map((q, idx) => {
+                const userAnswer = state.answers[idx];
+                
+                if (q.type === 'mc') {
+                    const isCorrect = userAnswer === q.correctIndex;
+                    const statusClass = isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
+                    const statusIcon = isCorrect ? '✅ Benar' : '❌ Salah';
+                    return `
+                        <div class="mb-4 p-4 rounded-xl border ${statusClass}">
+                            <p class="text-xs text-gray-500 mb-1">Soal ${idx+1}</p>
+                            <p class="font-bold text-gray-800 mb-2">${q.text.split('<br>')[0]}...</p>
+                            <div class="text-sm">
+                                <p class="${isCorrect ? 'text-green-700' : 'text-red-700'} font-bold">${statusIcon}</p>
+                                ${!isCorrect ? `<p class="text-green-600 mt-1 text-xs">Jawaban Benar: ${q.options[q.correctIndex]}</p>` : ''}
+                                <p class="text-gray-500 text-xs mt-1 italic">"${q.explanation}"</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="mb-4 p-4 rounded-xl border bg-blue-50 border-blue-200">
+                            <p class="text-xs text-gray-500 mb-1">Soal ${idx+1} (Uraian)</p>
+                            <p class="font-bold text-gray-800 mb-2">${q.text.replace(/<[^>]*>?/gm, ' ').substring(0, 50)}...</p>
+                            <div class="text-sm bg-white p-3 rounded-lg border border-blue-100">
+                                <p class="text-gray-400 text-xs mb-1">Jawaban Kamu:</p>
+                                <p class="text-gray-800">${userAnswer || '-'}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            const div = document.createElement('div');
+            div.className = 'glass-panel rounded-3xl p-8 fade-in text-center';
+            div.innerHTML = `
+                <div class="mb-6">
+                    <span class="text-6xl">${score >= 70 ? '🎉' : '💪'}</span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Hasil Kuis</h2>
+                <p class="text-gray-600 mb-6">Hebat, <strong>${state.user.name}</strong> sudah menyelesaikan kuis!</p>
+                
+                <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-2xl shadow-lg mb-8">
+                    <p class="text-sm opacity-90 mb-1">Nilai Pilihan Ganda</p>
+                    <p class="text-5xl font-black">${score}</p>
+                    <p class="text-sm mt-2 opacity-90">${correctCount} dari ${mcCount} benar</p>
+                </div>
+
+                <div class="text-left mb-8 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    <h3 class="font-bold text-gray-700 mb-4 sticky top-0 bg-white/90 backdrop-blur py-2">Ulasan Jawaban</h3>
+                    ${reviewHtml}
+                </div>
+
+                <button onclick="location.reload()" class="w-full bg-gray-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-900 transition shadow-lg">
+                    Kerjakan Lagi 🔄
+                </button>
+            `;
+            return div;
+        }
+
+        // --- INTERACTION HANDLERS ---
+
+        window.handleOptionSelect = (optionIndex) => {
+            // Prevent changing answer if feedback is already shown
+            if (state.feedbackShown) return;
+
+            const cards = document.querySelectorAll('.option-card');
+            cards.forEach((c, idx) => {
+                if (idx === optionIndex) {
+                    c.classList.add('selected', 'border-purple-500', 'bg-purple-50');
+                    c.querySelector('.option-circle').classList.add('bg-purple-500', 'text-white');
+                } else {
+                    c.classList.remove('selected', 'border-purple-500', 'bg-purple-50');
+                    c.querySelector('.option-circle').classList.remove('bg-purple-500', 'text-white');
+                }
+            });
+            state.answers[state.currentQuestionIndex] = optionIndex;
+        };
+
+        window.handleCheck = () => {
+             // Check if MC answer selected
+            if (state.answers[state.currentQuestionIndex] === undefined) {
+                alert("Pilih salah satu jawaban dulu ya!");
+                return;
+            }
+            
+            // Show Feedback
+            state.feedbackShown = true;
+            renderApp();
+        };
+
+        window.handleNext = () => {
+            const currentQ = questions[state.currentQuestionIndex];
+            
+            // For Essay, we save here since there is no "Check" step
+            if (currentQ.type === 'essay') {
+                const textVal = document.getElementById('essayAnswer').value;
+                if (!textVal.trim()) {
+                    alert("Tulis jawabanmu dulu ya!");
+                    return;
+                }
+                state.answers[state.currentQuestionIndex] = textVal;
+            }
+
+            if (state.currentQuestionIndex < questions.length - 1) {
+                state.currentQuestionIndex++;
+                state.feedbackShown = false; // Reset feedback for new question
+                renderApp();
+            } else {
+                state.step = 'result';
+                renderApp();
+            }
+        };
+
+        // Initialize
+        renderApp();
+    </script>
+</body>
+</html>
